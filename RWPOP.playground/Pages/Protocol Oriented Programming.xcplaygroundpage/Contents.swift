@@ -113,12 +113,9 @@ extension OldAndBustedHorse: ModeOfTransport {
  ---
  Protocols support values types (structs and enums). Value types are a large part of POP, we prefer to use structs and value semantics over classes and reference semantics/implicit sharing. Let's look at an example of why implicit sharing can sometimes cause headaches.
  */
-protocol Pet {
-    var name: String { get set }
-    func willReturnWhenCalled(ByName name: String) -> Bool
-}
-
-extension Pet {
+class Pet {
+    var name: String = ""
+    
     func willReturnWhenCalled(ByName name: String) -> Bool {
         if name == self.name {
             // Return to owner
@@ -131,17 +128,23 @@ extension Pet {
 }
 
 class PetDog: Pet {
-    var name: String = "Fido"
+    override init() {
+        super.init()
+        self.name = "Fido"
+    }
 }
 
 let myDog = PetDog()
 
 // If we pass the reference to myDog to another part of our application, a background process perhaps, and a mutation is applied to our dog
-myDog.name = "Steve"
+let myOtherDog = myDog
+myOtherDog.name = "Steve"
 
 // Later we go to call on our pet
 myDog.willReturnWhenCalled(ByName: "Fido") // Returns false, Steve embarks on an adventure, never to be seen again! (he'll probably be back by dinner time)
 /*:
+ Just to preface, this isn't the best example in the world for the benefit of value types but the point we're trying to drive home here is that it makes no sense for a pet dog to mutate, if we had our dog on a leash (have a reference to it) it makes no sense for it to suddenly change color or breed. Apply this thinking when creating abstractions for your models, you'll be surprised that when you start defaulting to structs instead of classes how little you need reference semantics.
+ 
  Implicit sharing can sometimes cause problems, in this scenario a dog owner can no longer get their beloved pet to respond to them! As PetDog is a reference type, we only have the pointer to where the PetDog lives on the heap, so someone else can point to our same PetDog, mutate it, and then when we come back later to take our PetDog a walk and then call on it to come home it completely ignores us as its name has changed. If we were using value types we wouldn't have had this problem. Bear in mind this is a very small example of the types of issues reference semantics can bring to the table, and the benefits of value types. If I were to summarize I think I would always default to value types, and only use classes if I needed reference semantics. That way implicit sharing won't unexpectedly sneak up on you.
  
  Also, we are doing something pretty cool here with protocol extensions. We can actually write extensions for protocols with default implementations of required functions, so now any type that conforms to the Pet protocol gets the implementation of willReturnWhenCalled for free. Pretty cool, right?
